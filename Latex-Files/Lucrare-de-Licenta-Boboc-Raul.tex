@@ -1,0 +1,70 @@
+\documentclass[11pt,a4paper]{report}
+
+\usepackage{fancyhdr}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{epstopdf}
+\usepackage{makeidx}
+\usepackage{tocloft}
+
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, filecolor=black, urlcolor=blue}
+\renewcommand*{\cftchapleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\contentsname}{Cuprins}
+\renewcommand{\bibname}{B\lowercase{ibliografie}}
+\renewcommand{\chaptername}{Capitolul}
+\renewcommand{\appendixname}{Anexa}
+\renewcommand{\indexname}{I\lowercase{ndice}}
+
+\pagestyle{fancy}
+\makeindex
+
+\title{\textit{<<Placeholder>>}}
+\author{Boboc Raul Madalin\\
+        Facultatea de Informatica\\
+        Universitatea
+        ,\hspace{-0.02cm},Alexandru Ioan Cuza", Iasi}
+
+\begin{document}
+\maketitle
+
+\pagenumbering{roman}
+% \include{Pagina_de_titlu}
+\tableofcontents
+\thispagestyle{empty}
+
+\fancyhf{}
+\clearpage
+\pagenumbering{arabic}
+
+\chapter*{Introducere}
+\addcontentsline{toc}{chapter}{Introducere}
+Acesta este un capitol introductiv.
+\newpage
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+\chapter{Hardware}
+\section{Design Mecanic}
+\section{Circuit Electronic}
+
+\chapter{Software}
+\section{Arhitectura}
+\section{Master}
+\section{Slave}
+
+\appendix
+\chapter*{Anexa}
+\addcontentsline{toc}{chapter}{Anexa}
+
+% \phantomsection
+% \addcontentsline{toc}{chapter}{Index}
+
+\begin{thebibliography}{99}
+    
+\end{thebibliography}
+\addcontentsline{toc}{chapter}{Bibliografie}
+
+\end{document}
