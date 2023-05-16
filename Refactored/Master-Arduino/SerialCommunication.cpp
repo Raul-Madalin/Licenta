@@ -2,15 +2,15 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
-SerialCommunication::SerialCommunication() {
-  message = "";
+SerialCommunication::SerialCommunication(int rxPin, int txPin) : RX(rxPin), TX(txPin), serialCommunication(rxPin, txPin) {
+    message = "";
 }
 
-void SerialCommunication::send(SoftwareSerial serialCommunication, char messageSent[]){
+void SerialCommunication::Send(char messageSent[]){
   serialCommunication.write(messageSent, 4);
 }
 
-String SerialCommunication::receive(SoftwareSerial serialCommunication) {
+String SerialCommunication::Receive() {
   message = "";
   if (serialCommunication.available()) {
     message = serialCommunication.readString();
