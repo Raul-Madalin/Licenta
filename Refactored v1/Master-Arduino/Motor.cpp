@@ -2,14 +2,15 @@
 #include <Arduino.h>
 
 Motor::Motor(Motors motorName) {
-  name = motorName;
+  this->name = motorName;
 }
 
 void Motor::Move(unsigned char shifter_0, unsigned char shifter_1, int dir, int stepsPerRevolution, Shifter shifter) {
-  // FIXME
-  // shifter.mapping(shifter_0, shifter_1, dir);
+  Serial.print("[STATUS] Moving: ");
+  Serial.println(this->name);
+  shifter.Mapping(shifter_0, shifter_1, this->name, dir);
   for (int count = 0; count < stepsPerRevolution; count++) {
-    switch (name) {
+    switch (this->name) {
       case MotorX:
         bitSet(shifter_1, 1);
         shifter.Load(shifter_0, shifter_1);
@@ -50,11 +51,14 @@ void Motor::Move(unsigned char shifter_0, unsigned char shifter_1, int dir, int 
   }
 }
 
-void Motor::ToOrigin(unsigned char shifter_0, unsigned char shifter_1, Shifter shifter, Position currentPosition, SerialCommunication serialCommunication) {
+void Motor::ToOrigin(unsigned char shifter_0, unsigned char shifter_1, Shifter shifter, Position currentPosition, SoftwareSerial mySerial) {
+  Serial.print("[STATUS] To origin: ");
+  Serial.println(this->name);
+
   String message = "";
   String endStopName = "";
 
-  switch (name) {
+  switch (this->name) {
     case MotorX:
       endStopName = "ENDx";
       break;
@@ -68,14 +72,24 @@ void Motor::ToOrigin(unsigned char shifter_0, unsigned char shifter_1, Shifter s
       break;
   }
 
-  do {
-    serialCommunication.Send("CHCK");
-    message = serialCommunication.Receive();
-    Move(shifter_0, shifter_1, 0, 10, shifter);
+  // do {
+    // mySerial.write("CHCK");
+    // serialCommunication.Send("CHCK");
+    // message = serialCommunication.Receive();
+    // if (mySerial.available() > 0) {
+      // message = mySerial.readString();
+      // message.trim();
+      // Serial.println("[STATUS] Received: " + message);
+    // }
 
-  } while (message.equals(endStopName) == false);
+    // message = mySerial.readString();
+    // message.trim();
+    // Serial.println("[STATUS] Received: " + message);
+    // Move(shifter_0, shifter_1, 0, 10, shifter);
 
-  Move(shifter_0, shifter_1, 1, 200, shifter);
+  // } while (message.equals(endStopName) == false);
+
+  // Move(shifter_0, shifter_1, 1, 200, shifter);
   delay(200);
 }
 

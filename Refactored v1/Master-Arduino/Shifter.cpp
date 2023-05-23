@@ -2,25 +2,32 @@
 #include <Arduino.h>
 
 Shifter::Shifter(int serPin, int srclkPin, int rclkPin) {
-  SER = serPin;
-  SRCLK = srclkPin;
-  RCLK = rclkPin;
+  this->SER = serPin;
+  this->SRCLK = srclkPin;
+  this->RCLK = rclkPin;
+
+  pinMode(this->RCLK, OUTPUT);
+  pinMode(this->SER, OUTPUT);
+  pinMode(this->SRCLK, OUTPUT);
+
+  digitalWrite(this->RCLK, HIGH);
+  digitalWrite(this->SER, 0);
+  digitalWrite(this->SRCLK, HIGH);  
 }
 
 void Shifter::Load(unsigned char shifter_0, unsigned char shifter_1) {
-  digitalWrite(RCLK, LOW);
-  shiftOut(SER, SRCLK, MSBFIRST, shifter_0);
-  shiftOut(SER, SRCLK, MSBFIRST, shifter_1);
-  digitalWrite(RCLK, HIGH);
+  digitalWrite(this->RCLK, LOW);
+  shiftOut(this->SER, this->SRCLK, MSBFIRST, shifter_0);
+  shiftOut(this->SER, this->SRCLK, MSBFIRST, shifter_1);
+  digitalWrite(this->RCLK, HIGH);
 }
 
-void Shifter::Reset(unsigned char shifter_0, unsigned char shifter_1) {
+void Shifter::Reset(unsigned char& shifter_0, unsigned char& shifter_1) {
   shifter_0 = 0;
   shifter_1 = 0;
   Load(shifter_0, shifter_1);
 }
 
-// TODO: change stepper to string after motor class implemetation
 void Shifter::Mapping(unsigned char shifter_0, unsigned char shifter_1, Motors motor, int dir) {
   switch (motor) {
     case MotorX:
@@ -51,7 +58,7 @@ void Shifter::Mapping(unsigned char shifter_0, unsigned char shifter_1, Motors m
   Load(shifter_0, shifter_1);
 }
 
-void Shifter::ChangeSpeed(unsigned char shifter_0, unsigned char shifter_1, int spd, SerialCommunication serialCommunication) {
+void Shifter::ChangeSpeed(unsigned char shifter_0, unsigned char shifter_1, int spd, SoftwareSerial mySerial) {
   switch (spd) {
     case 1:
       bitClear(shifter_0, 2);
@@ -73,7 +80,7 @@ void Shifter::ChangeSpeed(unsigned char shifter_0, unsigned char shifter_1, int 
       bitClear(shifter_1, 3);
       bitSet(shifter_1, 6);
       bitClear(shifter_1, 7);
-      serialCommunication.Send("SPD2");
+      mySerial.write("SPD2");
       break;
 
     case 4:
@@ -85,7 +92,7 @@ void Shifter::ChangeSpeed(unsigned char shifter_0, unsigned char shifter_1, int 
       bitSet(shifter_1, 3);
       bitClear(shifter_1, 6);
       bitSet(shifter_1, 7);
-      serialCommunication.Send("SPD4");
+      mySerial.write("SPD4");
       break;
 
     case 8:
@@ -97,7 +104,7 @@ void Shifter::ChangeSpeed(unsigned char shifter_0, unsigned char shifter_1, int 
       bitSet(shifter_1, 3);
       bitSet(shifter_1, 6);
       bitSet(shifter_1, 7);
-      serialCommunication.Send("SPD8");
+      mySerial.write("SPD8");
       break;
   }
   Load(shifter_0, shifter_1);

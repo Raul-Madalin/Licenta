@@ -1,40 +1,33 @@
-#include "ControlBoard.h"
-#include <Arduino.h>
 #include <Keypad.h>
+const byte ROWS = 3;  //four rows
+const byte COLS = 5;  //three columns
+//char keys[ROWS][COLS] = {
+//  {'X', 'Y', 'Z', 'R', 'F'},
+//  {'x', 'y', 'z', 'r', 'f'},
+//  {'H', 'S', '1', '2', '3'}
+//};
+char keys[ROWS][COLS] = {
+  { 'a', 'b', 'c', 'd', 'e' },
+  { 'f', 'g', 'h', 'i', 'j' },
+  { 'k', 'l', 'm', 'n', 'o' }
+};
+byte rowPins[ROWS] = { 4, 5, 6 };           //connect to the row pinouts of the kpd
+byte colPins[COLS] = { 8, 9, 10, 11, 12 };  //connect to the column pinouts of the kpd
 
-ControlBoard::ControlBoard()
-  : kpd(makeKeymap(keys), rowPins, colPins, ROWS, COLS) {
-  ROWS = 3;
-  COLS = 5;
+Keypad kpd = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-  keys[0][0] = 'a';
-  keys[0][1] = 'b';
-  keys[0][2] = 'c';
-  keys[0][3] = 'd';
-  keys[0][4] = 'e';
-  keys[1][0] = 'f';
-  keys[1][1] = 'g';
-  keys[1][2] = 'h';
-  keys[1][3] = 'i';
-  keys[1][4] = 'j';
-  keys[2][0] = 'k';
-  keys[2][1] = 'l';
-  keys[2][2] = 'm';
-  keys[2][3] = 'n';
-  keys[2][4] = 'o';
+extern unsigned char state;
+extern unsigned char button;
+extern unsigned char buttons[16];
+extern unsigned char hold;
+extern unsigned char spd;
+extern unsigned char pressed;
+extern char stepsFlag;
+extern int steps;
+extern char stopFlag;
+extern int maxSteps;
 
-  rowPins[0] = 4;
-  rowPins[1] = 5;
-  rowPins[2] = 6;
-
-  colPins[0] = 8;
-  colPins[1] = 9;
-  colPins[2] = 10;
-  colPins[3] = 11;
-  colPins[4] = 12;
-}
-
-void ControlBoard::CheckButtons(unsigned char button, unsigned char state, unsigned char buttons[], unsigned char pressed, int stepsFlag, unsigned char hold, unsigned char spd, unsigned char shifter_0, unsigned char shifter_1, Shifter shifter, SerialCommunication serialCommunication) {
+void checkButtons() {
   if (kpd.getKeys()) {
     for (int i = 0; i < LIST_MAX; i++) {  // Scan the whole key list.
       if (kpd.key[i].stateChanged) {      // Only find keys that have changed state.
@@ -42,41 +35,34 @@ void ControlBoard::CheckButtons(unsigned char button, unsigned char state, unsig
           case PRESSED:
             state = 1;  // PRESSED
             break;
-
           case HOLD:
             state = 2;  // HOLD
             break;
-
           case RELEASED:
             state = 3;  // RELEASED
             break;
-
           case IDLE:
             state = 0;  // IDLE
         }
-
         switch (state) {
           case 0:
             button = kpd.key[i].kchar;
             buttons[button - 97] = 0;
             break;
-
           case 1:
             button = kpd.key[i].kchar;
             buttons[button - 97] = 1;
             pressed = 1;
             break;
-
           case 2:
             button = kpd.key[i].kchar;
             buttons[button - 97] = 1;
             hold = 2;
             break;
-
           case 3:
             button = kpd.key[i].kchar;
             buttons[button - 97] = 1;
-            shifter.ChangeSpeed(shifter_0, shifter_1, spd, serialCommunication);
+            changeSpeed(spd);
             stepsFlag = 1;
             break;
         }
