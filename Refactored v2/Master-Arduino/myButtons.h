@@ -16,6 +16,7 @@ byte colPins[COLS] = { 8, 9, 10, 11, 12 };  //connect to the column pinouts of t
 
 Keypad kpd = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
+// TODO: get rid of extern variables
 extern unsigned char state;
 extern unsigned char button;
 extern unsigned char buttons[16];
@@ -26,6 +27,24 @@ extern char stepsFlag;
 extern int steps;
 extern char stopFlag;
 extern int maxSteps;
+
+enum ButtonsLabels {
+  LeftY,  // 0
+  LeftX,  // 1
+  UpZ,    // 2
+  RightR, // 3
+  LeftF,  // 4
+  RightY, // 5
+  RightX, // 6
+  DownZ,  // 7
+  LeftR,  // 8
+  RightF, // 9
+  Home,   // 10
+  MaxZ,   // 11
+  Speed1, // 12
+  Speed2, // 13
+  Speed3  // 14
+};
 
 void checkButtons() {
   if (kpd.getKeys()) {

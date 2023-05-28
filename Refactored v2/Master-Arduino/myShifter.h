@@ -1,3 +1,4 @@
+// TODO: get rid of extern variables
 extern unsigned char shifter_0;
 extern unsigned char shifter_1;
 extern boolean shifter[16];
@@ -47,8 +48,8 @@ void shifterMapping(int stepper, int dir) {
 }
 
 void changeSpeed(int spd) {
-  Serial.print("Speed: ");
-  Serial.println(spd);
+  // Serial.print("Speed: ");
+  // Serial.println(spd);
   switch (spd) {
     case 1:
       bitClear(shifter_0, 2);

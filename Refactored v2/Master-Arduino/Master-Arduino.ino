@@ -8,11 +8,24 @@ const int RX = A2;
 const int TX = A3;
 const int CLOCKWISE = 0;
 const int COUNTERCLOCKWISE = 1;
+const int SMALLSTEPS = 1;
+const int BIGSTEPS = 10;
+const int ROTATIONBACKSTEPS = 30;
+const int SMALLBACKSTEPS = 100;
+const int BIGBACKSTEPS = 150;
+const int RESETR = 560;
+const int MILISECONDS = 200;
+const int MICROSECONDS = 5000;
+const int ENDXPOSITION = 8300;
+const int ENDYPOSITION = 14000;
+const int EEADDR = 0;
 
+#include <EEPROM.h>
 #include <SoftwareSerial.h>
 #include "myShifter.h"
 #include "myStepper.h"
 #include "myButtons.h"
+#include "myPosition.h"
 
 SoftwareSerial mySerial(RX, TX);
 
@@ -26,6 +39,7 @@ char endstopRMinus;
 int maxSteps = 0;
 char stepsFlag = 1;
 char stopFlag = 0;
+int EEAddr = 0;
 
 unsigned char shifter_0 = 0;
 unsigned char shifter_1 = 0;
@@ -34,131 +48,19 @@ boolean shifter[16];
 String message;
 
 int prevX, prevY, prevZ = -100;
-int lastMovement = 0;
+float prevR = -100;
 
-struct Position {
-  int X, Y, Z, R;
-} currentPosition;
+Steppers lastMovement = Blank;
 
-enum ButtonsLabels {
-  LeftY,
-  LeftX,
-  UpZ,
-  RightR,
-  LeftF,
-  RightY,
-  RightX,
-  DownZ,
-  LeftR,
-  RightF,
-  Home,
-  MaxZ,
-  Speed8,
-  Speed4,
-  Speed2
-};
-
-enum Motors {
-  Blank,
-  MotorX,
-  MotorY,
-  MotorZ,
-  MotorR,
-  MotorF
-};
-
-void resetPosition() {
-  currentPosition.X = 0;
-  currentPosition.Y = 0;
-  currentPosition.Z = 0;
-}
-
-void reverseDirection(int& direction) {
-  if (direction == CLOCKWISE) {
-    direction = COUNTERCLOCKWISE;
-  } else if (direction == COUNTERCLOCKWISE) {
-    direction = CLOCKWISE;
-  }
-}
-
-void moveToOrigin(Motors motor, String signal, int steps) {
-  int direction = CLOCKWISE;
-  if (motor == MotorY) {
-    reverseDirection(direction);
-  }
-  Serial.println(motor);
-  do {
-    mySerial.write("CHCK", 4);
-    if (mySerial.available()) {
-      message = mySerial.readString();
-      message.trim();
-    }
-    stepperMove(motor, 0, 10);
-  } while (message.equals(signal) == false);
-
-  reverseDirection(direction);
-  stepperMove(motor, 1, steps);
-
-  if (motor == MotorZ) {
-    maxSteps = MAXSTEPS;
-  }
-
-  delay(200);
-}
-
+// TODO: implement focus movement
 void origin() {
   changeSpeed(4);
 
-  // moveToOrigin(MotorZ, "Clockwise", "ENDZ", 150);
-  moveToOrigin(MotorX, "ENDx", 100);
-
-  // do {
-  //   mySerial.write("CHCK", 4);
-  //   if (mySerial.available()) {
-  //     message = mySerial.readString();
-  //     message.trim();
-  //   }
-  //   stepperMove(3, 0, 10);
-  // } while (message.equals("ENDZ") == false);
-  // stepperMove(3, 1, 150);
-  // maxSteps = MAXSTEPS;
-  // currentPosition.Z = 0;
-  // delay(200);
-
-  // do {
-  //   mySerial.write("CHCK", 4);
-  //   if (mySerial.available()) {
-  //     message = mySerial.readString();
-  //     message.trim();
-  //     Serial.println(message);
-  //   }
-  //   stepperMove(1, 0, 10);
-  // } while (message.equals("ENDx") == false);
-  // stepperMove(1, 1, 100);
-  // currentPosition.X = 0;
-  // delay(200);
-
-  // do {
-  //   mySerial.write("CHCK", 4);
-  //   if (mySerial.available()) {
-  //     message = mySerial.readString();
-  //     message.trim();
-  //   }
-  //   stepperMove(2, 1, 10);
-  // } while (message.equals("ENDy") == false);
-  // stepperMove(2, 0, 100);  // TODO: more steps
-  // currentPosition.Y = 0;
-  // delay(200);
-
-  //  changeSpeed(8);
-  // do {
-  //   delayMicroseconds(5000);
-  //   endstopRPlus = digitalRead(ENDSTOP_R_PLUS);
-  //   stepperMove(4, 1, 1);
-  // } while(endstopRPlus == 1);
-  // stepperMove(4, 0, 100);
-  // R = 0;
-  // delay(200);
+  moveToOrigin(StepperZ, "ENDZ", BIGSTEPS, BIGBACKSTEPS, maxSteps);
+  moveToOrigin(StepperX, "ENDx", BIGSTEPS, SMALLBACKSTEPS, maxSteps);
+  moveToOrigin(StepperY, "ENDy", BIGSTEPS, SMALLBACKSTEPS, maxSteps);
+  rotateToOrigin(StepperR, SMALLSTEPS, RESETR);
+  resetPosition(currentPosition);
 
   //  do {
   //    mySerial.write("CHCK", 4);
@@ -195,22 +97,7 @@ void setup() {
 }
 
 void checkEndstops() {
-  if (prevX != currentPosition.X || prevY != currentPosition.Y || prevZ != currentPosition.Z) {
-    Serial.print("X: ");
-    Serial.print(currentPosition.X);
-    Serial.print(" | ");
-
-    Serial.print("Y: ");
-    Serial.print(currentPosition.Y);
-    Serial.print(" | ");
-
-    Serial.print("Z: ");
-    Serial.println(currentPosition.Z);
-
-    prevX = currentPosition.X;
-    prevY = currentPosition.Y;
-    prevZ = currentPosition.Z;
-  }
+  printCurrentPosition(prevX, prevY, prevZ, prevR);
 
   mySerial.write("CHCK", 4);
   if (mySerial.available()) {
@@ -218,26 +105,26 @@ void checkEndstops() {
     message.trim();
     Serial.println(message);
 
-    if (message.equals("ENDy") and lastMovement == 1) {
-      stepperMove(2, 0, 100);
-      currentPosition.Y = 0;
-    }
-    if (message.equals("ENDY") and lastMovement == 1) {
-      stepperMove(2, 1, 100);
-      currentPosition.Y = 5600;
-    }
-
-    if (message.equals("ENDx") and lastMovement == 2) {
-      stepperMove(1, 1, 100);
+    if (message.equals("ENDx") and lastMovement == StepperX) {
+      stepperMove(StepperX, CounterClockwise, SMALLBACKSTEPS);
       currentPosition.X = 0;
     }
-    if (message.equals("ENDX") and lastMovement == 2) {
-      stepperMove(1, 0, 100);
-      currentPosition.X = 4400;
+    if (message.equals("ENDX") and lastMovement == StepperX) {
+      stepperMove(StepperX, Clockwise, SMALLBACKSTEPS);
+      currentPosition.X = ENDXPOSITION;
     }
 
-    if (message.equals("ENDZ") and lastMovement == 3) {
-      stepperMove(3, 1, 150);
+    if (message.equals("ENDy") and lastMovement == StepperY) {
+      stepperMove(StepperY, Clockwise, SMALLBACKSTEPS);
+      currentPosition.Y = 0;
+    }
+    if (message.equals("ENDY") and lastMovement == StepperY) {
+      stepperMove(StepperY, CounterClockwise, SMALLBACKSTEPS);
+      currentPosition.Y = ENDYPOSITION;
+    }
+
+    if (message.equals("ENDZ") and lastMovement == StepperZ) {
+      stepperMove(StepperZ, CounterClockwise, BIGBACKSTEPS);
       currentPosition.Z = 0;
     }
   }
@@ -246,36 +133,38 @@ void checkEndstops() {
 void loop() {
   checkButtons();
   checkEndstops();
+
   for (int count = 0; count < 16; count++) {
     if (buttons[count] == 1) {
+      // Serial.println(count);
       switch (count) {
 
         case RightY:
-          lastMovement = 1;
-          if (hold == 2) {
-            changeSpeed(spd / hold);
-          }
-          stepperMove(2, 1, 10);
-          currentPosition.Y -= 10 / spd * 10;
+          lastMovement = StepperY;
+          // if (hold == 2) {
+          //   changeSpeed(spd / hold);
+          // }
+          stepperMove(StepperY, CounterClockwise, BIGSTEPS);
+          currentPosition.Y -= BIGSTEPS / spd * BIGSTEPS;
           break;
 
         case RightX:
-          lastMovement = 2;
-          if (hold == 2) {
-            changeSpeed(spd / hold);
-          }
-          stepperMove(1, 1, 10);
-          currentPosition.X += 10 / spd * 10;
+          lastMovement = StepperX;
+          // if (hold == 2) {
+          //   changeSpeed(spd / hold);
+          // }
+          stepperMove(StepperX, CounterClockwise, BIGSTEPS);
+          currentPosition.X += BIGSTEPS / spd * BIGSTEPS;
           break;
 
         case UpZ:
-          lastMovement = 3;
-          if (hold == 2 && spd > 2) {
-            changeSpeed(spd / hold);
-            stepsFlag = 2;
-          }
-          stepperMove(3, 0, 10);
-          currentPosition.Z -= 10 / spd * 10;
+          lastMovement = StepperZ;
+          // if (hold == 2 && spd > 2) {
+          //   changeSpeed(spd / hold);
+          //   stepsFlag = 2;
+          // }
+          stepperMove(StepperZ, Clockwise, BIGSTEPS);
+          currentPosition.Z -= BIGSTEPS / spd * BIGSTEPS;
           break;
 
         case RightR:
@@ -283,10 +172,11 @@ void loop() {
           delayMicroseconds(5000);
           endstopRMinus = digitalRead(ENDSTOP_R_MINUS);
           if (endstopRMinus == 0) {
-            stepperMove(4, 1, 30);
+            stepperMove(StepperR, CounterClockwise, ROTATIONBACKSTEPS);
             break;
           }
-          stepperMove(4, 0, 1);
+          stepperMove(StepperR, Clockwise, SMALLSTEPS);
+          currentPosition.R -= 0.5 / spd * SMALLSTEPS;
           break;
 
         case LeftF:
@@ -294,32 +184,32 @@ void loop() {
           break;
 
         case LeftY:
-          lastMovement = 1;
-          if (hold == 2) {
-            changeSpeed(spd / hold);
-          }
-          stepperMove(2, 0, 10);
-          currentPosition.Y += 10 / spd * 10;
+          lastMovement = StepperY;
+          // if (hold == 2) {
+          //   changeSpeed(spd / hold);
+          // }
+          stepperMove(StepperY, Clockwise, BIGSTEPS);
+          currentPosition.Y += BIGSTEPS / spd * BIGSTEPS;
           break;
 
         case LeftX:
-          lastMovement = 2;
-          if (hold == 2) {
-            changeSpeed(spd / hold);
-          }
-          stepperMove(1, 0, 10);
-          currentPosition.X -= 10 / spd * 10;
+          lastMovement = StepperX;
+          // if (hold == 2) {
+          //   changeSpeed(spd / hold);
+          // }
+          stepperMove(StepperX, Clockwise, BIGSTEPS);
+          currentPosition.X -= BIGSTEPS / spd * BIGSTEPS;
           break;
 
         case DownZ:
-          lastMovement = 3;
-          if (hold == 2 && spd > 2) {
-            changeSpeed(spd / hold);
-            stepsFlag = 2;
-          }
+          lastMovement = StepperZ;
+          // if (hold == 2 && spd > 2) {
+          //   changeSpeed(spd / hold);
+          //   stepsFlag = 2;
+          // }
           if (currentPosition.Z < maxSteps) {
-            stepperMove(3, 1, 10);
-            currentPosition.Z += 10 / spd * 10;
+            stepperMove(StepperZ, CounterClockwise, BIGSTEPS);
+            currentPosition.Z += BIGSTEPS / spd * BIGSTEPS;
           }
           break;
 
@@ -328,10 +218,11 @@ void loop() {
           delayMicroseconds(5000);
           endstopRPlus = digitalRead(ENDSTOP_R_PLUS);
           if (endstopRPlus == 0) {
-            stepperMove(4, 0, 20);
+            stepperMove(StepperR, Clockwise, ROTATIONBACKSTEPS);
             break;
           }
-          stepperMove(4, 1, 1);
+          stepperMove(StepperR, CounterClockwise, SMALLSTEPS);
+          currentPosition.R += 0.5 / spd * SMALLSTEPS;
           break;
 
         case RightF:
@@ -351,22 +242,94 @@ void loop() {
           maxSteps = currentPosition.Z;
           break;
 
-        case Speed8:
-          spd = 8;
-          changeSpeed(spd);
-          mySerial.write("SPD8", 4);
+        case Speed1:
+          if (pressed == 1) {
+            switch(spd) {
+              // case 2:
+              //   spd = 4;
+              //   changeSpeed(spd);
+              //   mySerial.write("SPD4", 4);
+              //   Serial.print("[STATUS] Changing speed... ");
+              //   Serial.println(spd);
+              //   break;
+              case 4:
+                spd = 8;
+                changeSpeed(spd);
+                mySerial.write("SPD8", 4);
+                Serial.print("[STATUS] Changing speed... ");
+                Serial.println(spd);
+                break;
+              case 8:
+                spd = 4;
+                changeSpeed(spd);
+                mySerial.write("SPD4", 4);
+                Serial.print("[STATUS] Changing speed... ");
+                Serial.println(spd);
+                break;
+            }
+          }
           break;
 
-        case Speed4:
-          spd = 4;
-          changeSpeed(spd);
-          mySerial.write("SPD4", 4);
-          break;
-
+        // TODO: change to "Target Position"
         case Speed2:
-          spd = 2;
-          changeSpeed(spd);
-          mySerial.write("SPD2", 4);
+          if (pressed == 1) {
+            Serial.print("[STATUS] Target position... ");
+
+            if (currentPosition.X < 100 && currentPosition.Y < 100 && currentPosition.Z < 100 && currentPosition.R < 2. && currentPosition.R > -2.) {
+              Serial.println("Going to position !");
+
+              EEAddr = EEADDR;
+              EEPROM.get(EEAddr, targetPosition.X); EEAddr +=sizeof(targetPosition.X);
+              EEPROM.get(EEAddr, targetPosition.Y); EEAddr +=sizeof(targetPosition.Y);
+              EEPROM.get(EEAddr, targetPosition.Z); EEAddr +=sizeof(targetPosition.Z);
+              EEPROM.get(EEAddr, targetPosition.R); EEAddr +=sizeof(targetPosition.R);
+
+              moveToPosition(StepperX, spd, BIGSTEPS, targetPosition.X, currentPosition.X);
+              moveToPosition(StepperY, spd, BIGSTEPS, targetPosition.Y, currentPosition.Y);
+              moveToPosition(StepperZ, spd, BIGSTEPS, targetPosition.Z, currentPosition.Z);
+              rotateToPosition(StepperR, spd, SMALLSTEPS, targetPosition.R, currentPosition.R);
+            }
+            else {
+              Serial.println("Saving position !");
+              
+              targetPosition.X = currentPosition.X;
+              targetPosition.Y = currentPosition.Y;
+              targetPosition.Z = currentPosition.Z;
+              targetPosition.R = currentPosition.R;
+
+              EEAddr = EEADDR;
+              EEPROM.put(EEAddr, targetPosition.X); EEAddr +=sizeof(targetPosition.X);
+              EEPROM.put(EEAddr, targetPosition.Y); EEAddr +=sizeof(targetPosition.Y);
+              EEPROM.put(EEAddr, targetPosition.Z); EEAddr +=sizeof(targetPosition.Z);
+              EEPROM.put(EEAddr, targetPosition.R); EEAddr +=sizeof(targetPosition.R);
+            }
+          }
+
+          break;
+
+        // TODO: change to "Target Component"
+        case Speed3:
+          Serial.println("[STATUS] Target component... ");
+          // switch(spd) {
+          //   case 2:
+          //     spd = 4;
+          //     changeSpeed(spd);
+          //     mySerial.write("SPD4", 4);
+          //     break;
+          //   case 4:
+          //     spd = 8;
+          //     changeSpeed(spd);
+          //     mySerial.write("SPD8", 4);
+          //     break;
+          //   case 8:
+          //     spd = 2;
+          //     changeSpeed(spd);
+          //     mySerial.write("SPD2", 4);
+          //     break;
+          // }
+          // spd = 2;
+          // changeSpeed(spd);
+          // mySerial.write("SPD2", 4);
           break;
       }
     }
