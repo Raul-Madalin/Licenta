@@ -57,6 +57,7 @@ void origin() {
     if (mySerial.available()) {
       message = mySerial.readString();
       message.trim();
+      Serial.println(message);
     }
     stepperMove(1, 0, 10);
   } while(message.equals("ENDx") == false);

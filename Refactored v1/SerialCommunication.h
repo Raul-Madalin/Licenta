@@ -6,11 +6,14 @@
 
 class SerialCommunication {
 private:
+  int RX;
+  int TX;
   String message;
+  SoftwareSerial serialCommunication;
 public:
-  SerialCommunication();
-  void send(SoftwareSerial serialCommunication, char message[]);
-  String receive(SoftwareSerial serialCommunication);
+  SerialCommunication(int rxPin, int txPin);
+  void Send(char message[]);
+  String Receive();
 };
 
 #endif
