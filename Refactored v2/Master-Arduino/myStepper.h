@@ -111,18 +111,44 @@ void rotateToOrigin(Steppers stepper, int steps, int stepsBack) {
   delay(200);
 }
 
-void moveToPosition(Steppers stepper, int spd, int steps, int targetPosition, int& currentPosition) {
+void moveToPosition(Steppers stepper, unsigned char& spd, int steps, int targetPosition, int& currentPosition) {
   int direction = COUNTERCLOCKWISE;
 
   changeSpeed(4);
+  spd = 4;
 
   if (stepper == StepperY) {
     reverseDirection(direction);
   }
 
+  if (targetPosition < currentPosition) {
+    reverseDirection(direction);
+  }
+
   while (abs(targetPosition - currentPosition) > 10) {
     stepperMove(stepper, direction, steps);
-    currentPosition += BIGSTEPS / spd * BIGSTEPS;
+    if (direction == CLOCKWISE) {
+      if (stepper == StepperZ) {
+        currentPosition -= BIGSTEPS * BIGSTEPS / (spd * 2);
+      }
+      else if (stepper == StepperY) {
+        currentPosition += BIGSTEPS / spd * BIGSTEPS;
+      }
+      else {
+        currentPosition -= BIGSTEPS / spd * BIGSTEPS;
+      }
+    }
+    else {
+      if (stepper == StepperZ) {
+        currentPosition += BIGSTEPS * BIGSTEPS / (spd * 2);
+      }
+      else if (stepper == StepperY) {
+        currentPosition -= BIGSTEPS / spd * BIGSTEPS;
+      }
+      else {
+        currentPosition += BIGSTEPS / spd * BIGSTEPS;
+      }
+    }
     Serial.print(targetPosition);
     Serial.print(" ");
     Serial.println(currentPosition);
@@ -136,7 +162,7 @@ void rotateToPosition(Steppers stepper, int spd, int steps, float targetPosition
   int endstopRMinus = 0;
 
   changeSpeed(8);
-  if (targetPosition < 0) {
+  if (targetPosition < currentPosition) {
     // targetPosition = -targetPosition;
     reverseDirection(direction);
   }
@@ -144,15 +170,15 @@ void rotateToPosition(Steppers stepper, int spd, int steps, float targetPosition
   while (abs(targetPosition - currentPosition) > 0.2) {
     delayMicroseconds(5000);
     stepperMove(stepper, direction, steps);
-    if (targetPosition < 0) {
-      currentPosition -= 0.5 / spd * SMALLSTEPS;
+    if (targetPosition < currentPosition) {
+      currentPosition -= 0.5 / 8 * SMALLSTEPS;
     }
+    // Serial.print(" ");
+    // Serial.println(currentPosition)
     else {
-      currentPosition += 0.5 / spd * SMALLSTEPS;
+      currentPosition += 0.5 / 8 * SMALLSTEPS;
     }
-    Serial.print(targetPosition);
-    Serial.print(" ");
-    Serial.println(currentPosition);
+    // Serial.print(targetPosition););
   } 
 
   delay(200);

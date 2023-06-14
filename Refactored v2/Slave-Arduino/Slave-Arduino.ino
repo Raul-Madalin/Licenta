@@ -164,6 +164,7 @@ void loop()
         strcmp(message, "CLM5") == 0 ||
         strcmp(message, "LM5C") == 0) {
       endstopFPlus = digitalRead(ENDSTOP_F_PLUS);
+      Serial.println("Moving backwards...");
       if (endstopFPlus == 1) {
         stepperMove(1, 5);
       }
@@ -177,6 +178,7 @@ void loop()
         strcmp(message, "CCM5") == 0 ||
         strcmp(message, "5CCM") == 0) {
       endstopFMinus = digitalRead(ENDSTOP_F_MINUS);
+      Serial.println("Moving...");
       if (endstopFMinus == 1) {
         stepperMove(0, 5);
       }
