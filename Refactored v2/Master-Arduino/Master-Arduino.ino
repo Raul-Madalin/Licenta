@@ -157,27 +157,29 @@ void loop() {
             // targetComponent.R = asin(double(targetComponent.X) / double(targetComponent.radius)) * 180 / M_PI;
             // targetComponent.R = targetComponent.R * 1.1;
 
-            stepperMove(StepperX, Clockwise, BIGSTEPS);
-            moveToPosition(StepperZ, spd, BIGSTEPS, targetComponent.Z, currentPosition.Z);
-            // rotateToPosition(StepperR, spd, SMALLSTEPS, targetComponent.R, currentPosition.R);
-            changeSpeed(8);
-            stepperMove(StepperR, Clockwise, SMALLSTEPS * 2);
-            changeSpeed(spd);
+            if (targetComponent.Z < maxSteps) {
+              stepperMove(StepperX, Clockwise, BIGSTEPS);
+              moveToPosition(StepperZ, spd, BIGSTEPS, targetComponent.Z, currentPosition.Z);
+              // rotateToPosition(StepperR, spd, SMALLSTEPS, targetComponent.R, currentPosition.R);
+              changeSpeed(8);
+              stepperMove(StepperR, Clockwise, SMALLSTEPS * 2);
+              changeSpeed(spd);
 
-            Serial.print("X: ");
-            Serial.print(targetComponent.X);
-            Serial.print(" | ");
+              Serial.print("X: ");
+              Serial.print(targetComponent.X);
+              Serial.print(" | ");
 
-            Serial.print("radius: ");
-            Serial.print(targetComponent.radius);
-            Serial.print(" | ");
+              Serial.print("radius: ");
+              Serial.print(targetComponent.radius);
+              Serial.print(" | ");
 
-            Serial.print("Z: ");
-            Serial.print(targetComponent.Z);
-            Serial.print(" | ");
+              Serial.print("Z: ");
+              Serial.print(targetComponent.Z);
+              Serial.print(" | ");
 
-            Serial.print("R: ");
-            Serial.println(targetComponent.R);
+              Serial.print("R: ");
+              Serial.println(targetComponent.R);
+            }
           }
           else {
             stepperMove(StepperX, Clockwise, BIGSTEPS);
@@ -199,27 +201,29 @@ void loop() {
             // targetComponent.R = asin(double(targetComponent.X) / double(targetComponent.radius)) * 180 / M_PI;
             // targetComponent.R = targetComponent.R * 1.32;
 
-            stepperMove(StepperX, CounterClockwise, BIGSTEPS);
-            moveToPosition(StepperZ, spd, BIGSTEPS, targetComponent.Z, currentPosition.Z);
-            // rotateToPosition(StepperR, spd, SMALLSTEPS, targetComponent.R, currentPosition.R);
-            changeSpeed(8);
-            stepperMove(StepperR, CounterClockwise, SMALLSTEPS * 2);
-            changeSpeed(spd);
+            if (targetComponent.Z < maxSteps) {
+              stepperMove(StepperX, CounterClockwise, BIGSTEPS);
+              moveToPosition(StepperZ, spd, BIGSTEPS, targetComponent.Z, currentPosition.Z);
+              // rotateToPosition(StepperR, spd, SMALLSTEPS, targetComponent.R, currentPosition.R);
+              changeSpeed(8);
+              stepperMove(StepperR, CounterClockwise, SMALLSTEPS * 2);
+              changeSpeed(spd);
 
-            Serial.print("X: ");
-            Serial.print(targetComponent.X);
-            Serial.print(" | ");
+              Serial.print("X: ");
+              Serial.print(targetComponent.X);
+              Serial.print(" | ");
 
-            Serial.print("radius: ");
-            Serial.print(targetComponent.radius);
-            Serial.print(" | ");
+              Serial.print("radius: ");
+              Serial.print(targetComponent.radius);
+              Serial.print(" | ");
 
-            Serial.print("Z: ");
-            Serial.print(targetComponent.Z);
-            Serial.print(" | ");
+              Serial.print("Z: ");
+              Serial.print(targetComponent.Z);
+              Serial.print(" | ");
 
-            Serial.print("R: ");
-            Serial.println(targetComponent.R);
+              Serial.print("R: ");
+              Serial.println(targetComponent.R);
+            }
           }
           else {
             stepperMove(StepperX, CounterClockwise, BIGSTEPS);
@@ -299,7 +303,7 @@ void loop() {
           //   changeSpeed(spd / hold);
           //   stepsFlag = 2;
           // }
-          if (currentPosition.Z < MAXSTEPS) {
+          if (currentPosition.Z < maxSteps) {
               if (targetComponentActive == 1) {
               // currentPosition.X -= BIGSTEPS / spd * BIGSTEPS;
               // targetComponent.X -= BIGSTEPS / spd * BIGSTEPS;
@@ -336,8 +340,8 @@ void loop() {
 
         // -------------------------------------------------------------------------------------------
 
-        case LeftR:
-          lastMovement = StepperX;
+        case LeftR:   // R+
+          lastMovement = StepperR;
           // if (hold == 2) {
           //   changeSpeed(spd / hold);
           // }
@@ -349,25 +353,30 @@ void loop() {
             targetComponent.Z = targetComponent.radius * cos(targetComponent.radians);
             targetComponent.X = targetComponent.Z * sin(targetComponent.radians) / cos(targetComponent.radians);
             targetComponent.Z = MAXSTEPS - (targetComponent.radius * cos(targetComponent.radians));
+            targetComponent.Z = targetComponent.Z * 1.07;
 
-            stepperMove(StepperR, CounterClockwise, SMALLSTEPS);
-            moveToPosition(StepperZ, spd, BIGSTEPS, targetComponent.Z, currentPosition.Z);
-            moveToPosition(StepperX, spd, BIGSTEPS, currentPosition.X - (tarCompX - targetComponent.X), currentPosition.X);
+            if (targetComponent.Z < maxSteps) {
+              stepperMove(StepperR, CounterClockwise, SMALLSTEPS);
+              moveToPosition(StepperZ, spd, BIGSTEPS, targetComponent.Z, currentPosition.Z);
+              // moveToPosition(StepperX, spd, BIGSTEPS, currentPosition.X - (tarCompX - targetComponent.X), currentPosition.X);
+              stepperMove(StepperX, CounterClockwise, (BIGSTEPS * 2));
+              currentPosition.X += (BIGSTEPS * 2) / spd * (BIGSTEPS * 2);
 
-            Serial.print("X: ");
-            Serial.print(targetComponent.X);
-            Serial.print(" | ");
+              Serial.print("X: ");
+              Serial.print(targetComponent.X);
+              Serial.print(" | ");
 
-            Serial.print("radius: ");
-            Serial.print(targetComponent.radius);
-            Serial.print(" | ");
+              Serial.print("radius: ");
+              Serial.print(targetComponent.radius);
+              Serial.print(" | ");
 
-            Serial.print("Z: ");
-            Serial.print(targetComponent.Z);
-            Serial.print(" | ");
+              Serial.print("Z: ");
+              Serial.print(targetComponent.Z);
+              Serial.print(" | ");
 
-            Serial.print("R: ");
-            Serial.println(targetComponent.R);
+              Serial.print("R: ");
+              Serial.println(targetComponent.R);
+            }
           }
           else {
             changeSpeed(8);
@@ -383,18 +392,57 @@ void loop() {
           }
           break;
 
-        case RightR:
-          changeSpeed(8);
-          delayMicroseconds(5000);
-          endstopRMinus = digitalRead(ENDSTOP_R_MINUS);
-          if (endstopRMinus == 0) {
-            Serial.println("Click");
-            stepperMove(StepperR, CounterClockwise, ROTATIONBACKSTEPS);
-            currentPosition.R += 0.5 / 8 * ROTATIONBACKSTEPS;
-            break;
+        case RightR:    // R-
+          lastMovement = StepperR;
+          // if (hold == 2) {
+          //   changeSpeed(spd / hold);
+          // }
+          if (targetComponentActive == 1) {
+            currentPosition.R -= 0.5 / spd * SMALLSTEPS;
+            targetComponent.R -= 0.5 / spd * SMALLSTEPS;
+            targetComponent.radians = targetComponent.R * M_PI / 180;
+
+            targetComponent.Z = targetComponent.radius * cos(targetComponent.radians);
+            targetComponent.X = targetComponent.Z * sin(targetComponent.radians) / cos(targetComponent.radians);
+            targetComponent.Z = MAXSTEPS - (targetComponent.radius * cos(targetComponent.radians));
+            targetComponent.Z = targetComponent.Z * 1.07;
+
+            if (targetComponent.Z < maxSteps) {
+              stepperMove(StepperR, Clockwise, SMALLSTEPS);
+              moveToPosition(StepperZ, spd, BIGSTEPS, targetComponent.Z, currentPosition.Z);
+              // moveToPosition(StepperX, spd, BIGSTEPS, currentPosition.X - (tarCompX - targetComponent.X), currentPosition.X);
+              stepperMove(StepperX, Clockwise, (BIGSTEPS * 2));
+              currentPosition.X += (BIGSTEPS * 2) / spd * (BIGSTEPS * 2);
+
+              Serial.print("X: ");
+              Serial.print(targetComponent.X);
+              Serial.print(" | ");
+
+              Serial.print("radius: ");
+              Serial.print(targetComponent.radius);
+              Serial.print(" | ");
+
+              Serial.print("Z: ");
+              Serial.print(targetComponent.Z);
+              Serial.print(" | ");
+
+              Serial.print("R: ");
+              Serial.println(targetComponent.R);
+            }
           }
-          stepperMove(StepperR, Clockwise, SMALLSTEPS);
-          currentPosition.R -= 0.5 / 8 * SMALLSTEPS;
+          else {
+            changeSpeed(8);
+            delayMicroseconds(5000);
+            endstopRMinus = digitalRead(ENDSTOP_R_MINUS);
+            if (endstopRMinus == 0) {
+              Serial.println("Click");
+              stepperMove(StepperR, CounterClockwise, ROTATIONBACKSTEPS);
+              currentPosition.R += 0.5 / 8 * ROTATIONBACKSTEPS;
+              break;
+            }
+            stepperMove(StepperR, Clockwise, SMALLSTEPS);
+            currentPosition.R -= 0.5 / 8 * SMALLSTEPS;
+          }
           break;
 
         // -------------------------------------------------------------------------------------------
